@@ -472,15 +472,15 @@ function check_if_conds(x::JuliaSyntax.SyntaxNode)
     end
 end
 
-function check_lazy(x::EXPR)
-    if isbinarysyntax(x)
-        if valof(headof(x)) == "||"
-            if headof(x.args[1]) === :TRUE || headof(x.args[1]) === :FALSE
-                seterror!(x, PointlessOR)
+function check_lazy(x::JuliaSyntax.SyntaxNode)
+    if is_binary_syntax(x)
+        if JuliaSyntax.head(x).kind === K"||"
+            if is_bool_literal(x.children[1])
+                set_error!(x, PointlessOR)
             end
-        elseif valof(headof(x)) == "&&"
-            if headof(x.args[1]) === :TRUE || headof(x.args[1]) === :FALSE || headof(x.args[2]) === :TRUE || headof(x.args[2]) === :FALSE
-                seterror!(x, PointlessAND)
+        elseif JuliaSyntax.head(x).kind === K"&&"
+            if is_bool_literal(x.children[1]) || is_bool_literal(x.children[2])
+                set_error!(x, PointlessAND)
             end
         end
     end
