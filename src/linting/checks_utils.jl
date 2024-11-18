@@ -23,3 +23,6 @@ function is_bool_literal(x::JuliaSyntax.SyntaxNode)
     JuliaSyntax.head(x).kind === K"true" ||
     JuliaSyntax.head(x).kind === K"false"
 end
+
+is_assignment(x::JuliaSyntax.SyntaxNode) = is_binary_syntax(x) && JuliaSyntax.head(x).kind === K"="
+is_declaration(x::JuliaSyntax.SyntaxNode) = is_binary_syntax(x) && JuliaSyntax.head(x).kind === K"::"

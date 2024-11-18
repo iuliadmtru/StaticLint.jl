@@ -725,6 +725,19 @@ end
 
 isunionfaketype(t::SymbolServer.FakeTypeName) = t.name.name === :Union && t.name.parent isa SymbolServer.VarRef && t.name.parent.name === :Core
 
+# function check_typeparams(x::JuliaSyntax.SyntaxNode)
+#     # if iswhere(x)  -- why?
+#     if JuliaSyntax.head(x.children[1]).kind === K"where"
+
+#         for i in 2:length(x.args)
+#             a = x.args[i]
+#             if hasbinding(a) && (bindingof(a).refs === nothing || length(bindingof(a).refs) < 2)
+#                 seterror!(a, UnusedTypeParameter)
+#             end
+#         end
+#     end
+# end
+
 function check_typeparams(x::EXPR)
     if iswhere(x)
         for i in 2:length(x.args)
@@ -939,12 +952,12 @@ function check_break_continue(x::EXPR)
     end
 end
 
-function check_const(x::EXPR)
-    if headof(x) === :const
-        if VERSION < v"1.8.0-DEV.1500" && CSTParser.isassignment(x.args[1]) && CSTParser.isdeclaration(x.args[1].args[1])
-            seterror!(x, TypeDeclOnGlobalVariable)
-        elseif headof(x.args[1]) === :local
-            seterror!(x, UnsupportedConstLocalVariable)
+function check_const(x::JuliaSyntax.SyntaxNode)
+    if JuliaSyntax.head(x).kind === K"const"
+        if VERSION < v"1.8.0-DEV.1500" && is_assignment(x.args[1]) && is_declaration(x.children[1].children[1])
+            set_error!(x, TypeDeclOnGlobalVariable)
+        elseif JuliaSyntax.head(x.children[1]).kind === K"local"
+            set_error!(x, UnsupportedConstLocalVariable)
         end
     end
 end
