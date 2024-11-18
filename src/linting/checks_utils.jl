@@ -8,6 +8,8 @@ end
 has_error(x::JuliaSyntax.SyntaxNode) = x.val isa LintCodes || (x.val isa AbstractVector && x.val[2] isa LintCodes)
 error_of(x::JuliaSyntax.SyntaxNode) = has_error(x) ? (x.val isa AbstractVector ? x.val[2] : x.val) : nothing
 
+parent_of(x::JuliaSyntax.SyntaxNode) = x.parent
+
 function is_binary_call(x::JuliaSyntax.SyntaxNode)
     JuliaSyntax.head(x).kind === K"call" &&
     length(x.children) == 3 &&
@@ -26,3 +28,6 @@ end
 
 is_assignment(x::JuliaSyntax.SyntaxNode) = is_binary_syntax(x) && JuliaSyntax.head(x).kind === K"="
 is_declaration(x::JuliaSyntax.SyntaxNode) = is_binary_syntax(x) && JuliaSyntax.head(x).kind === K"::"
+
+is_in_fexpr(x::JuliaSyntax.SyntaxNode, f) =
+    f(x) || (parent_of(x) isa JuliaSyntax.SyntaxNode && is_in_fexpr(parent_of(x), f))

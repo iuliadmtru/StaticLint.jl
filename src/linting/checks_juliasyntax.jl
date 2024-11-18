@@ -946,9 +946,11 @@ end
 
 isbadliteral(x::EXPR) = CSTParser.isliteral(x) && (CSTParser.isstringliteral(x) || headof(x) === :INTEGER || headof(x) === :FLOAT || headof(x) === :CHAR || headof(x) === :TRUE || headof(x) === :FALSE)
 
-function check_break_continue(x::EXPR)
-    if iskeyword(x) && (headof(x) === :CONTINUE || headof(x) === :BREAK) && !is_in_fexpr(x, x -> headof(x) in (:for, :while))
-        seterror!(x, ShouldBeInALoop)
+function check_break_continue(x::JuliaSyntax.SyntaxNode)
+    if JuliaSyntax.is_keyword(x) &&
+       (JuliaSyntax.head(x).kind === K"continue" || JuliaSyntax.head(x).kind === K"break") &&
+       !is_in_fexpr(x, x -> JuliaSyntax.head(x).kind in (K"for", K"while"))
+        set_error!(x, ShouldBeInALoop)
     end
 end
 
