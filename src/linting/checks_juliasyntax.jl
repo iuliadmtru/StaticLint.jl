@@ -69,21 +69,10 @@ const LintCodeDescriptions = Dict{LintCodes,String}(
     FileNotAvailable => "File not available."
 )
 
-using JuliaSyntax
 
-function is_binary_call(x::JuliaSyntax.SyntaxNode)
-    JuliaSyntax.head(x).kind === K"call" &&
-    length(x.children) == 3 &&
-    JuliaSyntax.is_operator(x.children[2])
-end
+include("checks_utils.jl")
 
-function set_error!(x::JuliaSyntax.SyntaxNode, err)
-    x.data = isnothing(x.val) ?
-        JuliaSyntax.SyntaxData(x.data.source, x.data.raw, x.data.position, err) :
-        JuliaSyntax.SyntaxData(x.data.source, x.data.raw, x.data.position, [x.val, err])
-end
-has_error(x::JuliaSyntax.SyntaxNode) = x.val isa LintCodes || (x.val isa AbstractVector && x.val[2] isa LintCodes)
-error_of(x::JuliaSyntax.SyntaxNode) = has_error(x) ? (x.val isa AbstractVector ? x.val[2] : x.val) : nothing
+# using JuliaSyntax
 
 const default_options = (true, true, true, true, true, true, true, true, true, true)
 
@@ -472,13 +461,13 @@ function _get_global_scope(s::Scope)
     end
 end
 
-function check_if_conds(x::EXPR)
-    if headof(x) === :if
-        cond = x.args[1]
-        if headof(cond) === :TRUE || headof(cond) === :FALSE
-            seterror!(cond, ConstIfCondition)
-        elseif isassignment(cond)
-            seterror!(cond, EqInIfConditional)
+function check_if_conds(x::JuliaSyntax.SyntaxNode)
+    if JuliaSyntax.head(x).kind === K"if"
+        cond = x.children[1]
+        if head(cond).kind === K"true" || head(cond).kind === K"false"
+            set_error!(cond, ConstIfCondition)
+        # elseif isassignment(cond)
+        #     set_error!(cond, EqInIfConditional)
         end
     end
 end
