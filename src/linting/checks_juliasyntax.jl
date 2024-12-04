@@ -109,11 +109,7 @@ function check_all(x::JuliaSyntax.SyntaxNode, opts::LintOptions)
     # check_kw_default(x, env)
     # check_use_of_literal(x)
 
-    if !isnothing(x.children) && length(x.children) > 1
-        for i in 1:length(x.children)
-            check_all(x.children[i], opts)
-        end
-    end
+    propagate_check(x, check_all, opts)
 end
 
 

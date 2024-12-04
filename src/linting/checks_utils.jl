@@ -1,5 +1,13 @@
 using JuliaSyntax
 
+function propagate_check(x, check::Function, args...)
+    if !isnothing(x.children) && length(x.children) > 1
+        for i in 1:length(x.children)
+            check(x.children[i], args...)
+        end
+    end
+end
+
 function set_error!(x::JuliaSyntax.SyntaxNode, err)
     x.data = isnothing(x.val) ?
         JuliaSyntax.SyntaxData(x.data.source, x.data.raw, x.data.position, err) :
