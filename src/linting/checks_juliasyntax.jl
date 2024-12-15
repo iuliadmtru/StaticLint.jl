@@ -130,7 +130,7 @@ function check_nothing_equality(x::JuliaSyntax.SyntaxNode)
 end
 
 function check_if_conds(x::JuliaSyntax.SyntaxNode)
-    if JuliaSyntax.head(x).kind === K"if"
+    if JuliaSyntax.head(x).kind === K"if" || JuliaSyntax.head(x).kind === K"elseif"
         cond = x.children[1]
         if head(cond).kind === K"true" || head(cond).kind === K"false"
             set_error!(cond, ConstIfCondition)  # should this be set in the condition?

@@ -120,7 +120,7 @@ function _check_const_if_cond(x::JuliaSyntax.SyntaxNode; annotated=true, propaga
         propagate_check(x, _check_const_if_cond; propagate=true)
     end
 
-    # @info "Checking for constant in `if` condition" x err
+    # @info "Checking for constant in `if` condition" x err propagate
 
     ret = err === StaticLint.ConstIfCondition
     if ret && print

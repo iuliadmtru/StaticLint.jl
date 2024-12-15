@@ -1,7 +1,7 @@
 using JuliaSyntax
 
 function propagate_check(x, check::Function, args...; kwargs...)
-    if !isnothing(x.children) && length(x.children) > 1
+    if !isnothing(x.children) && length(x.children) > 0
         for i in 1:length(x.children)
             check(x.children[i], args...; kwargs...)
         end
