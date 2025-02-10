@@ -16,7 +16,12 @@ it is paired with a collected list of errors/hints.
 """
 function lint_string(s::String, server = setup_server(); gethints = false)
     empty!(server.files)
-    f = File("", s, CSTParser.parse(s, true), nothing, server)
+
+    stream = JuliaSyntax.ParseStream(s)
+    JuliaSyntax.parse!(stream)
+    tree = JuliaSyntax.build_tree(JuliaSyntax.SyntaxNode, stream, filename="")
+
+    f = File("", s, CSTParser.parse(s, true), tree, nothing, server)
     env = getenv(f, server)
     setroot(f, f)
     setfile(server, "", f)

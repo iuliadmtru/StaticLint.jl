@@ -12,6 +12,7 @@ mutable struct File
     path::String
     source::String
     cst::EXPR
+    tree::JuliaSyntax.SyntaxNode
     root::Union{Nothing,File}
     server
 end
@@ -35,7 +36,12 @@ function loadfile(server::FileServer, path::String)
     try
         source = read(path, String)
         cst = CSTParser.parse(source, true)
-        f = File(path, source, cst, nothing, server)
+        
+        stream = JuliaSyntax.ParseStream(source)
+        JuliaSyntax.parse!(stream)
+        tree = JuliaSyntax.build_tree(JuliaSyntax.SyntaxNode, stream, filename=path)
+
+        f = File(path, source, cst, tree, nothing, server)
         setroot(f, f)
         setfile(server, path, f)
         return getfile(server, path)
@@ -76,6 +82,12 @@ end
 getcst(file::File) = file.cst
 function setcst(file::File, cst::EXPR)
     file.cst = cst
+    return file
+end
+
+gettree(file::File) = file.tree
+function settree(file::File, tree::JuliaSyntax.SyntaxNode)
+    file.tree = tree
     return file
 end
 

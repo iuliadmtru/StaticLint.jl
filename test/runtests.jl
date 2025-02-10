@@ -1,5 +1,5 @@
 using StaticLint, SymbolServer
-using CSTParser, Test
+using JuliaSyntax, CSTParser, Test
 using StaticLint: scopeof, bindingof, refof, errorof, check_all, getenv
 
 server = StaticLint.FileServer();

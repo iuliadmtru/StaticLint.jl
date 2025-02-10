@@ -2,7 +2,7 @@ module StaticLint
 
 include("exception_types.jl")
 
-using SymbolServer, CSTParser
+using SymbolServer, CSTParser, JuliaSyntax
 
 using CSTParser: EXPR, isidentifier, setparent!, valof, headof, hastrivia, parentof, isoperator, ispunctuation, to_codeobject
 # CST utils
@@ -397,8 +397,8 @@ include("server.jl")
 include("imports.jl")
 include("references.jl")
 include("macros.jl")
-# include("linting/checks.jl")
-include("linting/checks_juliasyntax.jl")
+include("linting/checks.jl")
+# include("linting/checks_juliasyntax.jl")
 include("type_inf.jl")
 include("utils.jl")
 include("interface.jl")
