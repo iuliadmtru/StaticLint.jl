@@ -8,11 +8,13 @@ Struct fields:
 """
 mutable struct Binding
     name::EXPR
+    identifier::JuliaSyntax.SyntaxNode
     val::Union{Binding,EXPR,SymbolServer.SymStore,Nothing}
     type::Union{Binding,SymbolServer.SymStore,Nothing}
     refs::Vector{Any}
 end
-Binding(x::EXPR) = Binding(CSTParser.get_name(x), x, nothing, [])
+Binding(x::EXPR) = Binding(CSTParser.get_name(x), nothing, x, nothing, [])
+Binding(x::JuliaSyntax.SyntaxNode) = Binding(nothing, x, nothing, [])
 
 function Base.show(io::IO, b::Binding)
     printstyled(io, " Binding(", to_codeobject(b.name),
