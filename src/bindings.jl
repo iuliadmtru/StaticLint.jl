@@ -14,7 +14,7 @@ mutable struct Binding
     refs::Vector{Any}
 end
 Binding(x::EXPR) = Binding(CSTParser.get_name(x), nothing, x, nothing, [])
-Binding(x::JuliaSyntax.SyntaxNode) = Binding(nothing, x, nothing, [])
+Binding(x::JuliaSyntax.SyntaxNode) = Binding(nothing, js_get_name(x), x, nothing, [])
 
 function Base.show(io::IO, b::Binding)
     printstyled(io, " Binding(", to_codeobject(b.name),
