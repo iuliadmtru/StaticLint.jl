@@ -1,22 +1,42 @@
 # expressions
 
-# !!! Not sure if this is equivalent to [`CSTParser.isunarycall`](https://github.com/julia-vscode/CSTParser.jl/blob/99e12c903f237394addfd3817bc9920e5afe3d61/src/interface.jl#L21C1-L21C115)
+#=
+!!! Not sure if this is really equivalent to [`CSTParser.isunarycall`](https://github.com/julia-vscode/CSTParser.jl/blob/99e12c903f237394addfd3817bc9920e5afe3d61/src/interface.jl#L21C1-L21C115)
+=#
 js_isunarycall(x::JuliaSyntax.SyntaxNode) =
     JuliaSyntax.kind(x) === K"call" && length(x.children) == 2 && any(JuliaSyntax.is_operator, x.children)
 js_isbinarysyntax(x::JuliaSyntax.SyntaxNode) =
     JuliaSyntax.is_operator(JuliaSyntax.head(x)) && length(x.children) == 2
 js_iswhere(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"where"
 
+js_iscall(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"call"
+js_iscurly(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"curly"
+#=
+TODO: update when JuliaSyntax has `brackets` node
+=#
+js_isbracketed(x::JuliaSyntax.SyntaxNode) = false  # TODO: JuliaSyntax.kind(x) === K"brackets"
+
 js_isassignment(x::JuliaSyntax.SyntaxNode) =
     js_isbinarysyntax(x) && JuliaSyntax.kind(x) === K"="
 js_isdeclaration(x::JuliaSyntax.SyntaxNode) =
     js_isbinarysyntax(x) && JuliaSyntax.kind(x) === K"::"
 
+#=
+!!! Not sure if this is really equivalent to [`CSTParser.is_getfield`](https://github.com/julia-vscode/CSTParser.jl/blob/99e12c903f237394addfd3817bc9920e5afe3d61/src/interface.jl#L52)
+TODO: rename to `is_getproperty`? https://docs.julialang.org/en/v1/base/base/#Base.getproperty
+=#
+js_is_getfield(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"."
+js_is_getfield_w_quotenode(x::JuliaSyntax.SyntaxNodex) =
+    js_is_getfield(x) && JuliaSyntax.kind(x.children[2]) === K"quote" && length(x.children[2].children) > 0  # how can it have 0 children?
+
 # literals
 
 js_issubtypedecl(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"<:"
 
-js_is_some_call(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"call" || js_isunarycall(x)
+#=
+TODO: useless ||; keep only `js_iscall`?
+=#
+js_is_some_call(x::JuliaSyntax.SyntaxNode) = js_iscall(x) || js_isunarycall(x)
 js_is_eventually_some_call(x::JuliaSyntax.SyntaxNode) =
     js_is_some_call(x) || ((js_isdeclaration(x) || js_iswhere(x)) && js_is_eventually_some_call(x.children[1]))
 
@@ -31,14 +51,20 @@ js_defines_primitive(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"prim
 js_defines_module(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"module"
 
 js_rem_subtype(x::JuliaSyntax.SyntaxNode) = js_issubtypedecl(x) ? x.children[1] : x
+js_rem_decl(x::JuliaSyntax.SyntaxNode) = js_isdeclaration(x) ? x.children[1] : x
+js_rem_call(x::JuliaSyntax.SyntaxNode) = js_iscall(x) ? x.children[1] : x
 js_rem_wheres(x::JuliaSyntax.SyntaxNode) = js_iswhere(x) ? js_rem_wheres(x.children[1]) : x
-js_rem_curly(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"curly" ? x.children[1] : x
+js_rem_curly(x::JuliaSyntax.SyntaxNode) = js_iscurly(x) ? x.children[1] : x
+#=
+TODO: update when JuliaSyntax has `brackets` node
+=#
+js_rem_invis(x::JuliaSyntax.SyntaxNode) = x # TODO: js_isbracketed(x) ? js_rem_invis(x.children[1]) : x
 
 js_get_sig(x::JuliaSyntax.SyntaxNode) = x.children[1]
 
 function js_get_name(x::JuliaSyntax.SyntaxNode)
     if js_defines_datatype(x)
-        expr = js_get_expr(x)
+        expr = js_get_sig(x)
         expr = js_rem_subtype(expr)
         expr = js_rem_wheres(expr)
         expr = js_rem_subtype(expr)
@@ -46,16 +72,21 @@ function js_get_name(x::JuliaSyntax.SyntaxNode)
     elseif js_defines_module(x)
         return x.children[1]
     elseif js_defines_function(x) || js_defines_macro(x)
-        expr = js_get_expr(x)                   # TODO
+        #=
+        TODO: example where all steps are necessary?
+        =#
+        expr = js_get_sig(x)
         expr = js_rem_wheres(expr)
-        expr = js_rem_decl(expr)                # TODO
-        expr = js_rem_call(expr)                # TODO
+        expr = js_rem_decl(expr)
+        expr = js_rem_call(expr)
         expr = js_rem_curly(expr)
-        expr = js_rem_invis(expr)               # TODO
+        expr = js_rem_invis(expr)
         # if isbinarysyntax(expr) && is_dot(expr.head)
-        if js_is_getfield_w_quotenode(expr)     # TODO
-            expr = expr.args[2].args[1]         # TODO
+        if js_is_getfield_w_quotenode(expr)
+            expr = expr.children[2].children[1]
         end
         return expr
+    elseif js_is_getfield_w_quotenode(expr)
+        expr = expr.children[2].children[1]
     end
 end
