@@ -3,13 +3,18 @@
 #=
 !!! Not sure if this is really equivalent to [`CSTParser.isunarycall`](https://github.com/julia-vscode/CSTParser.jl/blob/99e12c903f237394addfd3817bc9920e5afe3d61/src/interface.jl#L21C1-L21C115)
 =#
+js_iscall(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"call"
 js_isunarycall(x::JuliaSyntax.SyntaxNode) =
-    JuliaSyntax.kind(x) === K"call" && length(x.children) == 2 && any(JuliaSyntax.is_operator, x.children)
+    js_iscall(x) && length(x.children) == 2 && any(JuliaSyntax.is_operator, x.children)
+#=
+!!! Not sure if this is really equivalent to [`CSTParser.isbinarycall`](https://github.com/julia-vscode/CSTParser.jl/blob/99e12c903f237394addfd3817bc9920e5afe3d61/src/interface.jl#L23)
+=#
+js_isbinarycall(x::JuliaSyntax.SyntaxNode) =
+    js_iscall(x) && length(x.children) == 3 && JuliaSyntax.is_operator(x.children[2])
 js_isbinarysyntax(x::JuliaSyntax.SyntaxNode) =
     JuliaSyntax.is_operator(JuliaSyntax.head(x)) && length(x.children) == 2
 js_iswhere(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"where"
 
-js_iscall(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"call"
 js_iscurly(x::JuliaSyntax.SyntaxNode) = JuliaSyntax.kind(x) === K"curly"
 #=
 TODO: update when JuliaSyntax has `brackets` node
@@ -88,5 +93,19 @@ function js_get_name(x::JuliaSyntax.SyntaxNode)
         return expr
     elseif js_is_getfield_w_quotenode(expr)
         expr = expr.children[2].children[1]
+    elseif js_isbinarycall(x)
+        #=
+        What does this do?!
+        =#
+        expr = x.children[2]  # The operator?
+        if js_isunarycall(expr)  # If `expr` is now the operator in the binary call, how can it be a unary call? I am missing something.
+            return js_get_name(expr.children[1])
+        end
+        expr = js_rem_wheres(expr)
+        expr = js_rem_decl(expr)
+        expr = js_rem_call(expr)
+        expr = js_rem_curly(expr)
+        expr = js_rem_invis(expr)
+        return js_get_name(expr)
     end
 end
